@@ -1,70 +1,38 @@
-.DEFAULT_GOAL := install
-.PHONY: install uninstall deb rpm install-deps deb-deps rpm-deps
+VERSION := 1.0.0
+APP := license-gen
+APP_DIR := /usr/share/$(APP)
+BUILD_ROOT := $(CURDIR)/build
+DEB_WORK ?= $(BUILD_ROOT)
+RPM_ROOT := $(BUILD_ROOT)/rpm
+SOURCE := $(APP)-$(VERSION)
 
-package = license-gen_1.0.0_amd64
-SKIP_DEPS ?= 0
-SUDO ?= $(shell if [ "$$(id -u)" -ne 0 ]; then printf sudo; fi)
+.PHONY: test stage deb rpm
 
-# Use distribution packages so the installed script works with system Python.
-define install_dependencies
-	@if [ "$(SKIP_DEPS)" = "1" ]; then \
-		echo "Skipping dependency installation (SKIP_DEPS=1)."; \
-	elif command -v apt-get >/dev/null 2>&1; then \
-		$(SUDO) apt-get update && $(SUDO) apt-get install -y $(1); \
-	elif command -v dnf >/dev/null 2>&1; then \
-		$(SUDO) dnf install -y $(2); \
-	else \
-		echo "No supported package manager found (apt-get or dnf). Install dependencies manually and use SKIP_DEPS=1." >&2; \
-		exit 1; \
-	fi
-endef
+test:
+	python3 -m unittest -v
 
-install-deps:
-	$(call install_dependencies,python3 python3-pyqt6 libuv1-dev,python3 python3-pyqt6 libuv-devel)
+stage:
+	install -Dm644 -t "$(DESTDIR)$(APP_DIR)" license_gen.py license_gui.py
+	install -Dm644 -t "$(DESTDIR)$(APP_DIR)/templates" templates/*.txt
+	install -Dm644 -t "$(DESTDIR)/usr/share/applications" license-gen.desktop
+	install -d "$(DESTDIR)/usr/bin"
+	printf '#!/bin/sh\nexec /usr/bin/python3 -E $(APP_DIR)/license_gen.py "$$@"\n' > "$(DESTDIR)/usr/bin/$(APP)"
+	chmod 755 "$(DESTDIR)/usr/bin/$(APP)"
+	ln -sf $(APP) "$(DESTDIR)/usr/bin/generate-license"
 
-deb-deps:
-	$(call install_dependencies,python3 python3-pyqt6 libuv1-dev dpkg-dev,python3 python3-pyqt6 libuv-devel dpkg)
+deb:
+	@set -eu; mkdir -p "$(DEB_WORK)"; \
+	root=$$(mktemp -d "$(DEB_WORK)/deb.XXXXXXXX"); trap 'rm -rf "$$root"' EXIT; \
+	chmod 755 "$$root"; \
+	$(MAKE) stage DESTDIR="$$root"; \
+	install -Dm644 license-gen_1.0.0_amd64/DEBIAN/control "$$root/DEBIAN/control"; \
+	sed -i 's/^Version:.*/Version: $(VERSION)/' "$$root/DEBIAN/control"; \
+	install -Dm644 LICENSE "$$root/usr/share/doc/$(APP)/copyright"; \
+	TMPDIR="$(DEB_WORK)" dpkg-deb --root-owner-group --build "$$root" "$(CURDIR)/$(APP)_$(VERSION)_all.deb"
 
-rpm-deps:
-	$(call install_dependencies,python3 python3-pyqt6 libuv1-dev rpm,python3 python3-pyqt6 libuv-devel rpm-build)
-
-install: install-deps
-	mkdir -p /opt/xmrigui
-	mkdir -p /usr/share/icons/hicolor/256x256/apps
-	cp xmrigui.png /opt/xmrigui/
-	cp xmrigui.png /usr/share/icons/hicolor/256x256/apps/
-	cp xmrigui.desktop /usr/share/applications/
-	cp xmrig /opt/xmrigui/
-	chmod +x /opt/xmrigui/xmrig
-	cp mining_tools.py /usr/local/bin/mining_tools.py
-	cp xmrigui.py /usr/local/bin/xmrigui
-	chmod +x /usr/local/bin/xmrigui
-
-uninstall:
-	rm /usr/local/bin/xmrigui /usr/local/bin/mining_tools.py
-	rm -rf /opt/xmrigui
-	rm /usr/share/icons/hicolor/256x256/apps/xmrigui.png
-	rm /usr/share/applications/xmrigui.desktop
-
-deb: deb-deps
-	mkdir -p $(package)/usr/local/bin/
-	mkdir -p $(package)/opt/xmrigui/
-	mkdir -p $(package)/usr/share/icons/hicolor/256x256/apps/
-	mkdir -p $(package)/usr/share/applications/
-	cp mining_tools.py $(package)/usr/local/bin/mining_tools.py
-	cp xmrigui.py $(package)/usr/local/bin/xmrigui
-	chmod +x $(package)/usr/local/bin/xmrigui
-	cp xmrig $(package)/opt/xmrigui/
-	chmod +x $(package)/opt/xmrigui/xmrig
-	cp xmrigui.png $(package)/opt/xmrigui/
-	cp xmrigui.png $(package)/usr/share/icons/hicolor/256x256/apps/
-	cp xmrigui.desktop $(package)/usr/share/applications/
-	dpkg-deb --build --root-owner-group $(package)
-
-rpm: rpm-deps
-	mkdir -p rpmbuild/BUILD rpmbuild/RPMS rpmbuild/SOURCES rpmbuild/SPECS rpmbuild/SRPMS
-	cp xmrigui.py mining_tools.py xmrig xmrigui.png xmrigui.desktop rpmbuild/SOURCES/
-	cp xmrigui.spec rpmbuild/SPECS/ 2>/dev/null || true
-	rpmbuild -bb --define "_topdir $(shell pwd)/rpmbuild" rpmbuild/SPECS/xmrigui.spec
-	cp rpmbuild/RPMS/*/*.rpm .
-	rm -rf rpmbuild
+rpm:
+	mkdir -p "$(RPM_ROOT)/SOURCES" "$(RPM_ROOT)/$(SOURCE)" "$(RPM_ROOT)/tmp"
+	cp -r Makefile LICENSE README.md license-gen.desktop license_gen.py license_gui.py templates "$(RPM_ROOT)/$(SOURCE)/"
+	tar -czf "$(RPM_ROOT)/SOURCES/$(SOURCE).tar.gz" -C "$(RPM_ROOT)" "$(SOURCE)"
+	rpmbuild -bb --define "_topdir $(RPM_ROOT)" --define "_tmppath $(RPM_ROOT)/tmp" --define "app_version $(VERSION)" license-gen.spec
+	cp "$(RPM_ROOT)"/RPMS/noarch/$(APP)-$(VERSION)-*.rpm "$(CURDIR)/"
