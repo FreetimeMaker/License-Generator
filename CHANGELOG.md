@@ -8,6 +8,6 @@ The project follows semantic versioning.
 
 No unreleased changes yet.
 
-## 4.0.1 - 2026-11-19
+## 1.0.0 - 2026-11-24
 
 Initial Release
