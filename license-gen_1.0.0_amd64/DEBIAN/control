@@ -1,0 +1,7 @@
+Package: license-gen
+Source: license-gen
+Version: 1.0.0
+Architecture: amd64
+Maintainer: Freetime Maker <FreetimeMaker@proton.me>
+Description: A console and GUI License choose for Open Source Software.
+Depends: python3 (>= 3.9), python3-pyqt6, libuv1-dev
