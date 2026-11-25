@@ -40,7 +40,7 @@ def run(config, project_name=""):
 
     app = QApplication([])
     window = QWidget()
-    window.setWindowTitle("License Generator v1.0.0")
+    window.setWindowTitle("License Generator v1.1.0")
     window.resize(820, 640)
     layout = QVBoxLayout(window)
     form = QFormLayout()
