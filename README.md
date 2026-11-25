@@ -1,52 +1,169 @@
 # License Generator
 
-An interactive open-source license generator for Linux, inspired by [anth0nycodes/license-generator](https://github.com/anth0nycodes/license-generator). It is written in Python and includes a PyQt6 desktop interface. Both the CLI and GUI work offline and share the same templates and settings.
+## This Repo is sponsored by
+
+[![Sponsor](https://readme.cash/i/gg9k963fkf.svg)](https://readme.cash/c/gg9k963fkf)
+
+License Generator is a free and open-source tool for creating license files on Linux. It provides an interactive terminal menu and a graphical desktop app. Both work offline and share the same templates and settings.
+
+Built with **Python 3** and **PyQt6**. The command-line interface uses only the Python standard library. Inspired by [anth0nycodes/license-generator](https://github.com/anth0nycodes/license-generator).
+
+## Features
+
+### Supported Licenses
+
+- **187 offline templates** covering every non-deprecated entry in the [SPDX License List v3.29.0](https://github.com/spdx/license-list-data/tree/v3.29.0) marked OSI-approved or FSF-libre.
+- **GitHub and GitLab coverage**: Includes the licenses offered by [GitHub's Choose a License catalog](https://github.com/github/choosealicense.com/tree/gh-pages/_licenses) and the [GitLab.com license templates API](https://gitlab.com/api/v4/templates/licenses). The generator uses its own bundled texts, not byte-for-byte copies of the platform templates.
+- **Short identifiers**: `gpl-3.0`, `gfdl-1.3`, and `lgpl-3.0` select their `-only` variants. Use the explicit SPDX ID to select an `-or-later` variant. Deprecated SPDX IDs and exceptions are not separate templates.
+
+### Key Capabilities
+
+- **Preview, copy, and save** license text from the desktop app, or generate a license directly from the terminal.
+- **Copyright details**: Fill in the holder and year for MIT, BSD-2-Clause, and BSD-3-Clause. The holder defaults to the saved author or Git user name, and the year defaults to the current year.
+- **Shared defaults**: Settings are stored in `$XDG_CONFIG_HOME/license-gen/config.json` or `~/.config/license-gen/config.json`.
+- **Project-specific filenames**: The optional project name changes the suggested filename (for example, `LICENSE-My-Project`), not the license text. The default filename is `LICENSE`.
+- **Overwrite protection**: Interactive mode asks before replacing a file. Quick mode requires `--force` to overwrite one.
 
 ## Installation
 
-Download the package for your distribution from GitHub Releases and install it with your package manager:
+### Linux
 
-```sh
-# Debian or Ubuntu
-sudo apt install ./license-gen_*_all.deb
+Download the package for your distribution from [GitHub Releases](https://github.com/FreetimeMaker/License-Generator/releases). The package manager installs Python and PyQt6 as runtime dependencies.
 
-# Fedora
-sudo dnf install ./license-gen-*.noarch.rpm
+#### Debian / Ubuntu (APT)
+
+Download the `.deb` file or use the APT Repository:
+
+```bash
+sudo cd /etc/apt/keyrings
+curl -fSLo freetime-repository.gpg https://repo.free-time.me/public.gpg
+gpg --show-keys --with-fingerprint freetime-repository.gpg
 ```
 
-The packages install PyQt6 as a dependency. To run from source, use `python3 license_gen.py` (Python 3.9 or later). To open the GUI, install PyQt6 and run `python3 license_gen.py --gui`.
+after that do:
 
-## Usage
-
-```sh
-generate-license                     # Open the interactive menu
-generate-license --ls                # List license identifiers
-generate-license -i mit              # Show the original license text
-generate-license --sl mit            # Save the default license
-generate-license --sa 'Ada Example'  # Save the default author
-generate-license -q                  # Generate LICENSE without prompting
-generate-license -q --license bsd-3-clause --year 2024-2026 --project 'My Project'
-generate-license --sc                # Show saved defaults
-generate-license --rc                # Clear saved defaults
-license-gen --gui                     # Or select License Generator from the application menu
+```bash
+sudo install -d -m 0755 /etc/apt/keyrings
+sudo install -m 0644 freetime-repository.gpg /etc/apt/keyrings/freetime-repository.gpg
+printf '%s\n' 'deb [arch=amd64 signed-by=/etc/apt/keyrings/freetime-repository.gpg] https://repo.free-time.me/apt/ stable main' | sudo tee /etc/apt/sources.list.d/freetime-repository.list
+sudo apt update
 ```
 
-For MIT and BSD licenses, the app suggests the saved author or the name from `git config user.name`. The year defaults to the current year. Quick mode only overwrites existing files with `--force`. The GUI lets you preview, copy, and save licenses, and set defaults shared by both interfaces. Settings are stored in `~/.config/license-gen/config.json` or in `license-gen/config.json` under `$XDG_CONFIG_HOME`.
+then run:
 
-Enter an optional project name in the interactive menu, with `--project`, or in the GUI. It changes only the suggested filename (for example, `LICENSE-My-Project`), not the license text. Without a project name, the filename defaults to `LICENSE`. Use `-o LICENSE` to keep that filename even when a project name is provided.
+```bash
+sudo apt install license-gen
+```
 
-The offline catalog covers all 187 non-deprecated entries in the [SPDX License List v3.29.0](https://github.com/spdx/license-list-data/tree/v3.29.0) marked OSI-approved or FSF-libre. SPDX exceptions and deprecated IDs are not separate templates. Existing short IDs such as `gpl-3.0` still work; use `GPL-3.0-or-later` to explicitly select that variant.
+#### Fedora / Red Hat (RPM)
 
-The catalog also covers the licenses in [GitHub's Choose a License template repository](https://github.com/github/choosealicense.com/tree/gh-pages/_licenses) and the [GitLab.com license templates API](https://gitlab.com/api/v4/templates/licenses). Platform keys `gfdl-1.3` and `lgpl-3.0` select `GFDL-1.3-only` and `LGPL-3.0-only` respectively; use the explicit SPDX ID if you want the `-or-later` variant. The generator uses its bundled texts, not byte-for-byte copies of the platforms' templates.
+Download the `.rpm` file or use the YUM Repository:
 
-The 174 added templates use the SPDX v3.29.0 texts. The original 13 templates are unchanged: they use SPDX v3.26.0 texts except for GPL-3.0-only, which comes from this repository's `LICENSE`. The app fills in copyright details for MIT, BSD-2-Clause, and BSD-3-Clause only. Before publishing other templates, check for placeholders to fill in and for required source file headers, copyright statements, or `NOTICE` files.
+```bash
+curl -fSLo freetime-repository.asc https://repo.free-time.me/yum/x86_64/public.asc
+gpg --show-keys --with-fingerprint freetime-repository.asc
+```
 
-## Building and publishing packages
+then do:
 
-- Debian or Ubuntu: run `sudo apt install make dpkg-dev`, then `make deb`.
-- Fedora: run `sudo dnf install make rpm-build`, then `make rpm`.
-- Tests: run `python3 -m unittest -v`.
+```bash
+sudo nano /etc/yum.repos.d/freetime-repository.repo
+```
 
-The finished `.deb` and `.rpm` packages land in the project root next to the `Makefile`. Build intermediates go into `build/` by default, not your home directory. If `dpkg-deb` reports incorrect permissions when building on a Windows drive under WSL, run `make deb DEB_WORK=/tmp` to stage the files on the Linux filesystem. The finished package still lands in the project root.
+then add:
 
-To publish a release, update the version in the `Makefile`, build both packages locally, and manually attach the tested packages to the GitHub release.
+```text
+[freetime-repository]
+name=Freetime Repository
+baseurl=https://repo.free-time.me/yum/x86_64/
+enabled=1
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://repo.free-time.me/yum/x86_64/public.asc
+
+```
+
+then run:
+
+```bash
+sudo dnf --refresh makecache
+sudo dnf install license-gen
+```
+
+Open **License Generator** from the application menu or run `license-gen --gui`. For the interactive terminal menu, run `generate-license`.
+
+To remove a packaged installation, run `sudo apt remove license-gen` or `sudo dnf remove license-gen`.
+
+## Running from Source
+
+Run these commands from the repository root with Python 3.9 or newer:
+
+```sh
+python3 license_gen.py          # Terminal menu
+python3 license_gen.py --gui    # Desktop app; requires PyQt6
+```
+
+Install PyQt6 separately for the desktop app, for example with `sudo apt install python3-pyqt6` on Debian or Ubuntu, or `sudo dnf install python3-pyqt6` on Fedora.
+
+## Makefile Commands
+
+### Install and Uninstall
+
+```sh
+sudo make install
+sudo make uninstall
+```
+
+Direct installation uses `/usr/local` by default and expects the runtime dependencies to be installed separately. To install without `sudo`, run `make install PREFIX="$HOME/.local"` and make sure `$HOME/.local/bin` is on your `PATH`. Use the same `PREFIX` to uninstall. Both targets honor `DESTDIR`; uninstalling leaves user settings intact.
+
+### Build Packages
+
+```sh
+make deb    # Debian / Ubuntu
+make rpm    # Fedora
+```
+
+`make` must already be installed. If the selected packaging tool is missing, the build installs `dpkg` via `apt-get` or `rpm-build` via `dnf`. This requires access to the package repositories and uses `sudo` when not running as root. Pass `AUTO_INSTALL_DEPS=0` to use only preinstalled tools.
+
+Packages appear in the repository root; intermediate files go into `build/`. If Debian packaging fails on a Windows-mounted filesystem under WSL, try `make deb DEB_WORK=/tmp` to stage the files on the Linux filesystem.
+
+## Command Line Options
+
+| Command                               | What it does                           |
+| ------------------------------------- | -------------------------------------- |
+| `generate-license`                    | Opens the interactive terminal menu.   |
+| `generate-license --ls`               | Lists available license identifiers.   |
+| `generate-license --info MIT`         | Shows the original license text.       |
+| `generate-license --sl MIT`           | Saves the default license.             |
+| `generate-license --sa 'Ada Example'` | Saves the default author.              |
+| `generate-license --sc`               | Shows saved defaults.                  |
+| `generate-license --rc`               | Clears saved defaults.                 |
+| `generate-license -q`                 | Generates a license without prompting. |
+| `license-gen --gui`                   | Opens the desktop app.                 |
+
+Generate a BSD-3-Clause license with explicit copyright details:
+
+```sh
+generate-license -q --license BSD-3-Clause --holder 'Ada Example' \
+  --year 2024-2026 --project 'My Project'
+```
+
+Use `-o LICENSE` to override the project-specific filename. Use `generate-license --help` for all options.
+
+## Contribute
+
+### Support the Project
+
+If you find this tool useful, you can support development via [Open Collective](https://opencollective.com/freetimemaker) or the [donation page](https://donation.free-time.me/).
+
+### Development
+
+Run the tests from the repository root with `make test` or `python3 -m unittest -v`. Bug reports and pull requests are welcome on [GitHub](https://github.com/FreetimeMaker/License-Generator). See the [changelog](CHANGELOG.md) for release notes.
+
+To publish a release, update the version in the `Makefile`, build both packages, and attach the tested artifacts to the GitHub release.
+
+## License
+
+The generator is licensed under [GPL-3.0-only](LICENSE). Bundled templates retain their own terms. The 174 newer templates come from SPDX v3.29.0; the original 13 use SPDX v3.26.0 texts except for GPL-3.0-only, which uses this repository's `LICENSE`.
+
+Before publishing a generated license, check for placeholders and any required copyright notices, source headers, or `NOTICE` files. The generator only substitutes copyright details for MIT, BSD-2-Clause, and BSD-3-Clause.
