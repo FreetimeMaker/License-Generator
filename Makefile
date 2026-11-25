@@ -59,7 +59,7 @@ deb: deb-deps
 	root=$$(mktemp -d "$(DEB_WORK)/deb.XXXXXXXX"); trap 'rm -rf "$$root"' EXIT; \
 	chmod 755 "$$root"; \
 	$(MAKE) stage DESTDIR="$$root"; \
-	install -Dm644 license-gen_1.0.0_all/DEBIAN/control "$$root/DEBIAN/control"; \
+	install -Dm644 "$(APP)_$(VERSION)_all/DEBIAN/control" "$$root/DEBIAN/control"; \
 	sed -i 's/^Version:.*/Version: $(VERSION)/' "$$root/DEBIAN/control"; \
 	install -Dm644 LICENSE "$$root/usr/share/doc/$(APP)/copyright"; \
 	TMPDIR="$(DEB_WORK)" dpkg-deb --root-owner-group --build "$$root" "$(CURDIR)/$(APP)_$(VERSION)_all.deb"
