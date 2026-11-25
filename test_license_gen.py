@@ -7,11 +7,30 @@ import license_gen as app
 
 
 class GeneratorTests(unittest.TestCase):
+    def test_catalog(self):
+        self.assertEqual(len(app.LICENSES), 187)
+        self.assertEqual(
+            set(app.LICENSES.values()),
+            {path.stem for path in app.TEMPLATES_DIR.glob("*.txt")},
+        )
+        self.assertEqual(app.license_key("GPL-3.0-only"), "gpl-3.0")
+        self.assertEqual(app.license_key("GPL-3.0-OR-LATER"), "gpl-3.0-or-later")
+        self.assertEqual(app.license_key("EUPL-1.2"), "eupl-1.2")
+
+    def test_platform_aliases(self):
+        for alias in ("gfdl-1.3", "lgpl-3.0"):
+            with self.subTest(alias=alias):
+                self.assertEqual(app.license_key(alias.upper()), f"{alias}-only")
+                self.assertEqual(
+                    app.license_key(f"{alias}-or-later"), f"{alias}-or-later"
+                )
+
     def test_templates(self):
         for key, spdx in app.LICENSES.items():
             with self.subTest(key=key):
                 self.assertEqual(app.license_key(spdx), key)
                 output = app.render(key, "Müller", "2024-2026")
+                self.assertTrue(output.strip())
                 self.assertTrue(output.endswith("\n"))
                 if key in app.PERSONALIZED:
                     self.assertIn("Copyright (c) 2024-2026 Müller", output)

@@ -35,7 +35,11 @@ For MIT and BSD licenses, the app suggests the saved author or the name from `gi
 
 Enter an optional project name in the interactive menu, with `--project`, or in the GUI. It changes only the suggested filename (for example, `LICENSE-My-Project`), not the license text. Without a project name, the filename defaults to `LICENSE`. Use `-o LICENSE` to keep that filename even when a project name is provided.
 
-The 13 templates match the reference app's license selection. They are bundled from the [SPDX License List v3.26.0](https://github.com/spdx/license-list-data/tree/v3.26.0/text), except for GPL-3.0, which comes from this repository's `LICENSE`. The app fills in copyright details for MIT and BSD. Other templates, including their examples and appendices, are used unchanged. Check whether your project needs separate source file headers, copyright statements, or `NOTICE` files.
+The offline catalog covers all 187 non-deprecated entries in the [SPDX License List v3.29.0](https://github.com/spdx/license-list-data/tree/v3.29.0) marked OSI-approved or FSF-libre. SPDX exceptions and deprecated IDs are not separate templates. Existing short IDs such as `gpl-3.0` still work; use `GPL-3.0-or-later` to explicitly select that variant.
+
+The catalog also covers the licenses in [GitHub's Choose a License template repository](https://github.com/github/choosealicense.com/tree/gh-pages/_licenses) and the [GitLab.com license templates API](https://gitlab.com/api/v4/templates/licenses). Platform keys `gfdl-1.3` and `lgpl-3.0` select `GFDL-1.3-only` and `LGPL-3.0-only` respectively; use the explicit SPDX ID if you want the `-or-later` variant. The generator uses its bundled texts, not byte-for-byte copies of the platforms' templates.
+
+The 174 added templates use the SPDX v3.29.0 texts. The original 13 templates are unchanged: they use SPDX v3.26.0 texts except for GPL-3.0-only, which comes from this repository's `LICENSE`. The app fills in copyright details for MIT, BSD-2-Clause, and BSD-3-Clause only. Before publishing other templates, check for placeholders to fill in and for required source file headers, copyright statements, or `NOTICE` files.
 
 ## Building and publishing packages
 

@@ -14,6 +14,14 @@ LICENSES = dict(
         "MIT Apache-2.0 BSD-2-Clause BSD-3-Clause AGPL-3.0-only BSL-1.0 CC0-1.0 EPL-2.0 GPL-2.0-only GPL-3.0-only LGPL-2.1-only MPL-2.0 Unlicense".split(),
     )
 )
+TEMPLATES_DIR = Path(__file__).with_name("templates")
+# Preserve existing menu positions and short IDs when adding SPDX templates.
+_legacy_ids = set(LICENSES.values())
+LICENSES.update(
+    (path.stem.lower(), path.stem)
+    for path in sorted(TEMPLATES_DIR.glob("*.txt"), key=lambda path: path.stem.lower())
+    if path.stem not in _legacy_ids
+)
 PERSONALIZED = {
     "mit": "<copyright holders>",
     "bsd-2-clause": "<owner>",
@@ -21,20 +29,24 @@ PERSONALIZED = {
 }
 
 
+# GitHub and GitLab still use these unsuffixed keys for their GNU templates.
+PLATFORM_ALIASES = {
+    "gfdl-1.3": "gfdl-1.3-only",
+    "lgpl-3.0": "lgpl-3.0-only",
+}
+
+
 def license_key(value):
+    normalized = value.lower()
+    normalized = PLATFORM_ALIASES.get(normalized, normalized)
     for key, spdx in LICENSES.items():
-        if value.lower() in (key, spdx.lower()):
+        if normalized in (key, spdx.lower()):
             return key
     raise ValueError(f"Unknown license: {value}")
 
 
 def template(key):
-    return (
-        Path(__file__)
-        .with_name("templates")
-        .joinpath(LICENSES[key] + ".txt")
-        .read_text(encoding="utf-8")
-    )
+    return (TEMPLATES_DIR / (LICENSES[key] + ".txt")).read_text(encoding="utf-8")
 
 
 def render(key, holder="", year=""):
