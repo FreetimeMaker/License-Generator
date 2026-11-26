@@ -35,7 +35,6 @@ Download the package for your distribution from [GitHub Releases](https://github
 Download the `.deb` file or use the APT Repository:
 
 ```bash
-sudo cd /etc/apt/keyrings
 curl -fSLo freetime-repository.gpg https://repo.free-time.me/public.gpg
 gpg --show-keys --with-fingerprint freetime-repository.gpg
 ```
