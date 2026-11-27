@@ -136,6 +136,7 @@ Packages appear in the repository root; intermediate files go into `build/`. If 
 | ------------------------------------- | -------------------------------------- |
 | `generate-license`                    | Opens the interactive terminal menu.   |
 | `generate-license --ls`               | Lists available license identifiers.   |
+| `generate-license --version`          | Shows the installed version.           |
 | `generate-license --info MIT`         | Shows the original license text.       |
 | `generate-license --sl MIT`           | Saves the default license.             |
 | `generate-license --sa 'Ada Example'` | Saves the default author.              |

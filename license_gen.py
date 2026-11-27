@@ -13,6 +13,8 @@ from pathlib import Path
 from urllib.parse import quote
 from urllib.request import urlopen
 
+VERSION = "1.2.0"
+
 LICENSES = dict(
     zip(
         "mit apache-2.0 bsd-2-clause bsd-3-clause agpl-3.0 bsl-1.0 cc0-1.0 epl-2.0 gpl-2.0 gpl-3.0 lgpl-2.1 mpl-2.0 unlicense".split(),
@@ -217,6 +219,7 @@ def license_filename(project):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Generate open-source licenses.")
+    parser.add_argument("--version", action="version", version=f"%(prog)s {VERSION}")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument(
         "-q", "--quick", action="store_true", help="Generate without prompting"

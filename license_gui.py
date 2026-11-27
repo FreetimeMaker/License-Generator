@@ -5,6 +5,7 @@ from pathlib import Path
 from license_gen import (
     LICENSES,
     PERSONALIZED,
+    VERSION,
     copyright_year,
     git_author,
     git_root,
@@ -44,7 +45,7 @@ def run(config, project_name=""):
     app.setDesktopFileName("license-gen")
     app.setWindowIcon(QIcon(str(Path(__file__).with_name("license-gen.png"))))
     window = QWidget()
-    window.setWindowTitle("License Generator v1.1.0")
+    window.setWindowTitle(f"License Generator v{VERSION}")
     window.resize(820, 640)
     layout = QVBoxLayout(window)
     form = QFormLayout()
