@@ -68,7 +68,7 @@ deb: deb-deps
 
 rpm: rpm-deps
 	mkdir -p "$(RPM_ROOT)/SOURCES" "$(RPM_ROOT)/$(SOURCE)" "$(RPM_ROOT)/tmp"
-	cp -r Makefile LICENSE README.md license-gen.desktop license-gen.svg license_gen.py license_gui.py templates "$(RPM_ROOT)/$(SOURCE)/"
+	cp -r Makefile LICENSE README.md license-gen.desktop license_gen.py license_gui.py templates "$(RPM_ROOT)/$(SOURCE)/"
 	tar -czf "$(RPM_ROOT)/SOURCES/$(SOURCE).tar.gz" -C "$(RPM_ROOT)" "$(SOURCE)"
 	rpmbuild -bb --define "_topdir $(RPM_ROOT)" --define "_tmppath $(RPM_ROOT)/tmp" --define "app_version $(VERSION)" license-gen.spec
 	cp "$(RPM_ROOT)"/RPMS/noarch/$(APP)-$(VERSION)-*.rpm "$(CURDIR)/"
