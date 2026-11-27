@@ -4,6 +4,6 @@ Type=Application
 Terminal=false
 Exec=license-gen --gui
 Name=License Generator
-Icon=text-x-generic
+Icon=license-gen
 Comment=A CLI and GUI License chooser for Open Source Software.
 Categories=Utility;Development;

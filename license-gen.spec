@@ -24,4 +24,5 @@ make stage DESTDIR="%{buildroot}"
 %{_bindir}/license-gen
 %{_bindir}/generate-license
 %{_datadir}/applications/license-gen.desktop
+%{_datadir}/icons/hicolor/128x128/apps/license-gen.png
 %{_datadir}/license-gen/

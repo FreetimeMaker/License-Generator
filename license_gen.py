@@ -1,12 +1,17 @@
-"""Offline license generator with a standard-library CLI and optional PyQt6 GUI."""
+"""Online-first license generator with offline templates and an optional PyQt6 GUI."""
 
 import argparse
 import json
 import os
 import re
+import shlex
 import subprocess
+import tempfile
 from datetime import date
+from functools import lru_cache
 from pathlib import Path
+from urllib.parse import quote
+from urllib.request import urlopen
 
 LICENSES = dict(
     zip(
@@ -49,8 +54,24 @@ def template(key):
     return (TEMPLATES_DIR / (LICENSES[key] + ".txt")).read_text(encoding="utf-8")
 
 
+@lru_cache(maxsize=None)
+def license_text(key):
+    spdx = LICENSES[key]
+    try:
+        url = f"https://spdx.org/licenses/{quote(spdx, safe='')}.json"
+        with urlopen(url, timeout=2) as response:
+            data = json.loads(response.read(2_000_000))
+        if isinstance(data, dict) and data.get("licenseId") == spdx:
+            text = data.get("licenseText")
+            if isinstance(text, str) and text.strip():
+                return text
+    except (OSError, ValueError):
+        pass
+    return template(key)
+
+
 def render(key, holder="", year=""):
-    text = template(key)
+    values = {}
     if key in PERSONALIZED:
         holder, year = holder.strip(), year.strip()
         if not holder or len(holder.splitlines()) != 1:
@@ -60,6 +81,8 @@ def render(key, holder="", year=""):
                 "Enter a year (YYYY) or a year range (YYYY-YYYY) in ascending order."
             )
         values = {"<year>": year, PERSONALIZED[key]: holder}
+    text = license_text(key)
+    if values:
         text = re.sub(
             "|".join(map(re.escape, values)), lambda match: values[match[0]], text
         )
@@ -106,6 +129,42 @@ def git_author():
         return ""
 
 
+def git_root(directory):
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            cwd=directory,
+            capture_output=True,
+            text=True,
+            timeout=3,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    return Path(result.stdout.rstrip("\n")) if result.returncode == 0 else None
+
+
+def copyright_year(directory=None):
+    try:
+        result = subprocess.run(
+            [
+                "git",
+                "log",
+                "--max-parents=0",
+                "--format=%ad",
+                "--date=format:%Y",
+                "HEAD",
+            ],
+            cwd=directory,
+            capture_output=True,
+            text=True,
+            timeout=3,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return str(date.today().year)
+    years = re.findall(r"^[0-9]{4}$", result.stdout, re.MULTILINE)
+    return min(years) if result.returncode == 0 and years else str(date.today().year)
+
+
 def write_license(path, text, confirm, force=False):
     try:
         with path.open("x", encoding="utf-8", newline="\n") as output:
@@ -122,10 +181,33 @@ def choose(default):
     keys = list(LICENSES)
     for index, key in enumerate(keys, 1):
         print(f"{index:2}. {LICENSES[key]}")
-    raw = input(f"License (number or identifier) [{default}]: ").strip()
-    if raw.isdecimal() and 1 <= int(raw) <= len(keys):
-        return keys[int(raw) - 1]
-    return license_key(raw or default)
+    raw = input(f"Licenses (comma-separated numbers or IDs) [{default}]: ").strip()
+    selected = []
+    for item in (raw or default).split(","):
+        item = item.strip()
+        if item.isdecimal() and 1 <= int(item) <= len(keys):
+            selected.append(keys[int(item) - 1])
+        else:
+            selected.append(license_key(item))
+    return selected
+
+
+def edit_text(text):
+    editor = shlex.split(os.environ.get("VISUAL") or os.environ.get("EDITOR") or "vi")
+    if not editor:
+        raise ValueError("Set VISUAL or EDITOR to a valid editor command.")
+    with tempfile.TemporaryDirectory() as directory:
+        draft = Path(directory) / "LICENSE"
+        draft.write_text(text, encoding="utf-8")
+        result = subprocess.run([*editor, str(draft)])
+        if result.returncode != 0:
+            raise ValueError(
+                f"Editor exited with status {result.returncode}; license not saved."
+            )
+        text = draft.read_text(encoding="utf-8")
+    if not text.strip():
+        raise ValueError("The edited license is empty; license not saved.")
+    return text.rstrip("\n") + "\n"
 
 
 def license_filename(project):
@@ -148,7 +230,12 @@ def main(argv=None):
     mode.add_argument("--sa", metavar="NAME", help="Save the default author")
     mode.add_argument("--sc", action="store_true", help="Show saved defaults")
     mode.add_argument("--rc", action="store_true", help="Clear saved defaults")
-    parser.add_argument("--license", help="Specify the license identifier")
+    parser.add_argument(
+        "--license", action="append", help="Specify a license ID (repeat to combine)"
+    )
+    parser.add_argument(
+        "--edit", action="store_true", help="Edit the license text before saving"
+    )
     parser.add_argument("--holder", help="Specify the copyright holder")
     parser.add_argument("--year", help="Specify the year or year range")
     parser.add_argument("--project", help="Project name for the suggested filename")
@@ -157,13 +244,25 @@ def main(argv=None):
         "--force", action="store_true", help="Overwrite the existing output file"
     )
     args = parser.parse_args(argv)
+    if args.edit and any(
+        (
+            args.gui,
+            args.ls,
+            args.info is not None,
+            args.sl is not None,
+            args.sa is not None,
+            args.sc,
+            args.rc,
+        )
+    ):
+        parser.error("--edit is only available when generating a license from the CLI")
     try:
         if args.ls:
             for key, spdx in LICENSES.items():
                 print(f"{key}: {spdx}")
             return 0
         if args.info is not None:
-            print(template(license_key(args.info)).rstrip())
+            print(license_text(license_key(args.info)).rstrip())
             return 0
         if args.rc:
             config_path().unlink(missing_ok=True)
@@ -184,29 +283,37 @@ def main(argv=None):
 
             return run(config, args.project or "")
         default = config.get("license", "mit")
-        key = (
-            license_key(args.license)
+        keys = (
+            [license_key(value) for value in args.license]
             if args.license is not None
-            else (license_key(default) if args.quick else choose(default))
+            else ([license_key(default)] if args.quick else choose(default))
         )
+        labels = ", ".join(LICENSES[key] for key in keys)
         holder = (
             args.holder
             if args.holder is not None
             else config.get("author") or git_author()
         )
-        year = args.year if args.year is not None else str(date.today().year)
-        if key in PERSONALIZED and not args.quick:
-            if args.holder is None:
-                holder = input(f"Copyright holder [{holder}]: ").strip() or holder
-            if args.year is None:
-                year = input(f"Year [{year}]: ").strip() or year
-        text = render(key, holder, year)
         project = args.project
-        if project is None and not args.quick:
-            project = input("Project name (optional): ")
+        if not args.quick:
+            if project is None:
+                project = input("Project name (optional): ")
+            if args.holder is None:
+                prompt = (
+                    f"Author / copyright holder [{holder}]: "
+                    if holder
+                    else "Author / copyright holder: "
+                )
+                holder = input(prompt).strip() or holder
+        year = args.year if args.year is not None else copyright_year()
+        text = (
+            "\n\n".join(render(key, holder, year).rstrip("\n") for key in keys) + "\n"
+        )
+        if args.edit:
+            text = edit_text(text)
         output = args.output or Path(license_filename(project or ""))
         if not args.quick and input(
-            f"Write {LICENSES[key]} to {output}? [y/N] "
+            f"Write {labels} to {output}? [y/N] "
         ).strip().lower() not in {"y", "yes"}:
             return 0
         if not write_license(
@@ -220,7 +327,7 @@ def main(argv=None):
         ):
             print(f"File unchanged: {output}")
             return 1
-        print(f"{LICENSES[key]} saved to: {output}")
+        print(f"{labels} saved to: {output}")
         return 0
     except (EOFError, KeyboardInterrupt):
         print("\nCanceled.")

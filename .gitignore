@@ -11,8 +11,8 @@ __pycache__/
 build/
 develop-eggs/
 dist/
-/license-gen_*.deb
-/license-gen-*.rpm
+*.deb
+*.rpm
 downloads/
 eggs/
 .eggs/

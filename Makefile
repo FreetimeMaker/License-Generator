@@ -3,7 +3,7 @@ APP := license-gen
 PREFIX ?= /usr/local
 STAGE_PREFIX ?= /usr
 APP_DIR = $(STAGE_PREFIX)/share/$(APP)
-BUILD_ROOT := $(CURDIR)/build
+BUILD_ROOT := $(CURDIR)/rpmbuild
 DEB_WORK ?= $(BUILD_ROOT)
 RPM_ROOT := $(BUILD_ROOT)/rpm
 SOURCE := $(APP)-$(VERSION)
@@ -18,6 +18,7 @@ install: stage
 uninstall:
 	rm -f "$(DESTDIR)$(PREFIX)/bin/$(APP)" "$(DESTDIR)$(PREFIX)/bin/generate-license"
 	rm -f "$(DESTDIR)$(PREFIX)/share/applications/license-gen.desktop"
+	rm -f "$(DESTDIR)$(PREFIX)/share/icons/hicolor/scalable/apps/license-gen.svg" "$(DESTDIR)$(PREFIX)/share/$(APP)/license-gen.svg"
 	rm -f "$(DESTDIR)$(PREFIX)/share/$(APP)/license_gen.py" "$(DESTDIR)$(PREFIX)/share/$(APP)/license_gui.py"
 	for file in templates/*.txt; do rm -f "$(DESTDIR)$(PREFIX)/share/$(APP)/$$file" || exit; done
 	rmdir "$(DESTDIR)$(PREFIX)/share/$(APP)/templates" "$(DESTDIR)$(PREFIX)/share/$(APP)" 2>/dev/null || true
@@ -27,7 +28,8 @@ test:
 	python3 -m unittest -v
 
 stage:
-	install -Dm644 -t "$(DESTDIR)$(APP_DIR)" license_gen.py license_gui.py
+	install -Dm644 -t "$(DESTDIR)$(APP_DIR)" license_gen.py license_gui.py license-gen.svg
+	install -Dm644 -t "$(DESTDIR)$(STAGE_PREFIX)/share/icons/hicolor/scalable/apps" license-gen.svg
 	install -Dm644 -t "$(DESTDIR)$(APP_DIR)/templates" templates/*.txt
 	install -Dm644 -t "$(DESTDIR)$(STAGE_PREFIX)/share/applications" license-gen.desktop
 	install -d "$(DESTDIR)$(STAGE_PREFIX)/bin"
@@ -66,7 +68,8 @@ deb: deb-deps
 
 rpm: rpm-deps
 	mkdir -p "$(RPM_ROOT)/SOURCES" "$(RPM_ROOT)/$(SOURCE)" "$(RPM_ROOT)/tmp"
-	cp -r Makefile LICENSE README.md license-gen.desktop license_gen.py license_gui.py templates "$(RPM_ROOT)/$(SOURCE)/"
+	cp -r Makefile LICENSE README.md license-gen.desktop license-gen.svg license_gen.py license_gui.py templates "$(RPM_ROOT)/$(SOURCE)/"
 	tar -czf "$(RPM_ROOT)/SOURCES/$(SOURCE).tar.gz" -C "$(RPM_ROOT)" "$(SOURCE)"
 	rpmbuild -bb --define "_topdir $(RPM_ROOT)" --define "_tmppath $(RPM_ROOT)/tmp" --define "app_version $(VERSION)" license-gen.spec
 	cp "$(RPM_ROOT)"/RPMS/noarch/$(APP)-$(VERSION)-*.rpm "$(CURDIR)/"
+	rm -rf "build"
